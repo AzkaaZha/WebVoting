@@ -919,3 +919,29 @@ footer > span {
     width: 100%;
   }
 }
+
+
+/* Tombol reset voting pada dashboard admin */
+.btn.danger {
+  background: #8f1720;
+  color: #fff;
+  box-shadow: 0 5px 12px #8f172024;
+}
+.btn.danger:hover {
+  background: #70121a;
+  transform: translateY(-1px);
+}
+.btn.danger:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  transform: none;
+}
+@media (max-width: 760px) {
+  .admin-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .admin-actions .btn {
+    flex: 1 1 auto;
+  }
+}
