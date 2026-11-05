@@ -17,17 +17,9 @@ import {
   CircleAlert,
 } from "lucide-react";
 
-const CATEGORIES = [
-  "Si Tukang Jajan",
-  "Si Paling Kreatif",
-  "Si Paling Modis",
-  "Si Paling Ngopi",
-  "Morning Person",
-  "Si Paling Sabar",
-  "Si Paling Slow",
-  "Si Paling Minta Tolong",
-  "Best Employee",
-];
+const ROY_VOTER_NAME = "Roy M. Siagian";
+const BEST_EMPLOYEE_CATEGORY = "Best Employee";
+
 const DEMO_PEOPLE = [
   "Roy M. Siagian",
   "Sri Mariati Hutabarat",
@@ -289,8 +281,14 @@ export default function App() {
     return () => supabase.removeChannel(channel);
   }, [session]);
 
-  // step -1 = identitas pemilih; step 0-8 = sembilan kategori.
-  const currentCategory = step >= 0 ? categories[step] : null;
+  // Enam kategori umum diisi semua pemilih. Best Employee hanya untuk Roy.
+  const selectedVoter = people.find((p) => p.id === selectedPerson);
+  const isRoyVoter = selectedVoter?.full_name?.trim().toLowerCase() === ROY_VOTER_NAME.toLowerCase();
+  const voterCategories = categories.filter(
+    (category) => category.name !== BEST_EMPLOYEE_CATEGORY || isRoyVoter,
+  );
+  const totalVoterCategories = voterCategories.length;
+  const currentCategory = step >= 0 ? voterCategories[step] : null;
 
   function startVoting() {
     if (!selectedPerson) {
@@ -305,12 +303,13 @@ export default function App() {
       setMessage("Nama ini sudah mengirimkan suara.");
       return;
     }
+    setChoices({});
     setMessage("");
     setStep(0);
   }
 
   async function submitBallot() {
-    if (step !== 9) {
+    if (step !== totalVoterCategories) {
       setMessage(
         "Selesaikan seluruh kategori dan tinjau pilihan sebelum mengirim.",
       );
@@ -322,18 +321,18 @@ export default function App() {
       setStep(-1);
       return;
     }
-    if (categories.length !== 9) {
-      setMessage("Data kategori belum lengkap. Hubungi admin.");
+    if (categories.length !== 7 || totalVoterCategories !== (isRoyVoter ? 7 : 6)) {
+      setMessage("Data kategori belum sesuai konfigurasi terbaru. Hubungi admin.");
       return;
     }
-    if (categories.some((c) => !choices[c.id])) {
+    if (voterCategories.some((c) => !choices[c.id])) {
       setMessage("Lengkapi pilihan pada seluruh kategori.");
       setPage("vote");
       return;
     }
     setBusy(true);
     setMessage("");
-    const selections = categories.map((c) => ({
+    const selections = voterCategories.map((c) => ({
       category_id: c.id,
       candidate_id: choices[c.id],
     }));
@@ -481,7 +480,7 @@ export default function App() {
                   <Users size={15} /> {people.length || 48} kandidat
                 </span>
                 <span>
-                  <Award size={15} /> 9 kategori
+                  <Award size={15} /> 7 kategori
                 </span>
               </div>
             </div>
@@ -540,12 +539,12 @@ export default function App() {
                   <b>
                     {step === -1 ? "00" : String(step + 1).padStart(2, "0")}
                   </b>
-                  <span>/ 09</span>
+                  <span>/ {String(step === -1 ? 7 : totalVoterCategories || 7).padStart(2, "0")}</span>
                 </div>
               </div>
               <div className="progress-track">
                 <div
-                  style={{ width: `${step < 0 ? 0 : ((step + 1) / 9) * 100}%` }}
+                  style={{ width: `${step < 0 ? 0 : ((step + 1) / Math.max(totalVoterCategories, 1)) * 100}%` }}
                 />
               </div>
 
@@ -556,6 +555,8 @@ export default function App() {
                     value={selectedPerson}
                     onChange={(e) => {
                       setSelectedPerson(e.target.value);
+                      setChoices({});
+                      setStep(-1);
                       setMessage("");
                     }}
                   >
@@ -568,7 +569,7 @@ export default function App() {
                   </select>
                   <small>
                     Gunakan nama sendiri. Satu nama hanya dapat mengirim satu
-                    paket suara.
+                    paket suara. Best Employee hanya dapat diisi oleh Roy M. Siagian.
                   </small>
                   {message && <p className="error-text">{message}</p>}
                   <div className="identity-action">
@@ -581,7 +582,7 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-              ) : step >= 0 && step < 9 && currentCategory ? (
+              ) : step >= 0 && step < totalVoterCategories && currentCategory ? (
                 <>
                   <div className="voter-summary">
                     <span>PEMILIH</span>
@@ -631,11 +632,11 @@ export default function App() {
                   </div>
                   {message && <p className="error-text">{message}</p>}
                 </>
-              ) : step === 9 ? (
+              ) : step === totalVoterCategories ? (
                 <div className="empty-state">
                   <CheckCircle2 size={32} />
                   <h3>Seluruh kategori selesai</h3>
-                  <p>Lanjutkan untuk memeriksa sembilan pilihanmu.</p>
+                  <p>Lanjutkan untuk memeriksa {totalVoterCategories} pilihanmu.</p>
                   <button
                     className="btn primary"
                     onClick={() => setPage("review")}
@@ -647,10 +648,10 @@ export default function App() {
                 <div className="empty-state">Memuat kategori voting...</div>
               )}
 
-              {step >= 0 && step < 9 && (
+              {step >= 0 && step < totalVoterCategories && (
                 <div className="form-footer">
                   <span>
-                    {Object.keys(choices).length} dari 9 kategori terisi
+                    {voterCategories.filter((c) => choices[c.id]).length} dari {totalVoterCategories} kategori terisi
                   </span>
                   <div className="actions">
                     <button
@@ -660,7 +661,7 @@ export default function App() {
                     >
                       <ChevronLeft size={17} /> Sebelumnya
                     </button>
-                    {step < 8 ? (
+                    {step < totalVoterCategories - 1 ? (
                       <button
                         className="btn primary"
                         disabled={
@@ -676,7 +677,7 @@ export default function App() {
                         disabled={
                           !currentCategory || !choices[currentCategory.id]
                         }
-                        onClick={() => setStep(9)}
+                        onClick={() => setStep(totalVoterCategories)}
                       >
                         Tinjau pilihan <ChevronRight size={17} />
                       </button>
@@ -694,7 +695,7 @@ export default function App() {
             className="back-link"
             onClick={() => {
               setPage("vote");
-              setStep(8);
+              setStep(Math.max(voterCategories.length - 1, 0));
             }}
           >
             <ChevronLeft size={16} /> Kembali ke voting
@@ -702,9 +703,9 @@ export default function App() {
           <section className="vote-panel">
             <div className="eyebrow red">LANGKAH TERAKHIR</div>
             <h2>Periksa pilihanmu</h2>
-            <p>Pastikan semua pilihan sudah benar sebelum dikirim.</p>
+            <p>Pastikan semua pilihan sudah benar sebelum dikirim. {isRoyVoter ? "Kamu mengisi 7 kategori termasuk Best Employee." : "Kamu mengisi 6 kategori; Best Employee khusus untuk Roy M. Siagian."}</p>
             <div className="review-list">
-              {categories.map((c, i) => (
+              {voterCategories.map((c, i) => (
                 <div className="review-row" key={c.id}>
                   <span>{String(i + 1).padStart(2, "0")}</span>
                   <div>
@@ -731,8 +732,8 @@ export default function App() {
                 busy ||
                 !configured ||
                 !selectedPerson ||
-                categories.length !== 9 ||
-                categories.some((c) => !choices[c.id])
+                categories.length !== 7 ||
+                voterCategories.some((c) => !choices[c.id])
               }
               onClick={submitBallot}
             >
