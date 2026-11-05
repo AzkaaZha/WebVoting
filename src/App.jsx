@@ -17,8 +17,14 @@ import {
   CircleAlert,
 } from "lucide-react";
 
-const ROY_VOTER_NAME = "Roy M. Siagian";
-const BEST_EMPLOYEE_CATEGORY = "Best Employee";
+const CATEGORY_DESCRIPTIONS = {
+  1: "Person yang gak bisa lepas dari jajan dan makan cemal-cemil.",
+  2: "Benerin apa aja bisa, solutif.",
+  3: "Si person yang paling bentar-bentar ngantuk.",
+  4: "Si paling early datang, gak pernah telat 😇",
+  5: "Si person yang paling sabar dengan segala tugas dan candaan.",
+  6: "Si paling slow (suka telat 🤭).",
+};
 
 const DEMO_PEOPLE = [
   "Roy M. Siagian",
@@ -281,12 +287,8 @@ export default function App() {
     return () => supabase.removeChannel(channel);
   }, [session]);
 
-  // Enam kategori umum diisi semua pemilih. Best Employee hanya untuk Roy.
-  const selectedVoter = people.find((p) => p.id === selectedPerson);
-  const isRoyVoter = selectedVoter?.full_name?.trim().toLowerCase() === ROY_VOTER_NAME.toLowerCase();
-  const voterCategories = categories.filter(
-    (category) => category.name !== BEST_EMPLOYEE_CATEGORY || isRoyVoter,
-  );
+  // Semua pemilih mengisi enam kategori yang sama.
+  const voterCategories = categories;
   const totalVoterCategories = voterCategories.length;
   const currentCategory = step >= 0 ? voterCategories[step] : null;
 
@@ -321,7 +323,7 @@ export default function App() {
       setStep(-1);
       return;
     }
-    if (categories.length !== 7 || totalVoterCategories !== (isRoyVoter ? 7 : 6)) {
+    if (categories.length !== 6 || totalVoterCategories !== 6) {
       setMessage("Data kategori belum sesuai konfigurasi terbaru. Hubungi admin.");
       return;
     }
@@ -480,7 +482,7 @@ export default function App() {
                   <Users size={15} /> {people.length || 48} kandidat
                 </span>
                 <span>
-                  <Award size={15} /> 7 kategori
+                  <Award size={15} /> 6 kategori
                 </span>
               </div>
             </div>
@@ -539,7 +541,7 @@ export default function App() {
                   <b>
                     {step === -1 ? "00" : String(step + 1).padStart(2, "0")}
                   </b>
-                  <span>/ {String(step === -1 ? 7 : totalVoterCategories || 7).padStart(2, "0")}</span>
+                  <span>/ {String(step === -1 ? 6 : totalVoterCategories || 6).padStart(2, "0")}</span>
                 </div>
               </div>
               <div className="progress-track">
@@ -569,7 +571,7 @@ export default function App() {
                   </select>
                   <small>
                     Gunakan nama sendiri. Satu nama hanya dapat mengirim satu
-                    paket suara. Best Employee hanya dapat diisi oleh Roy M. Siagian.
+                    paket suara yang terdiri dari enam kategori.
                   </small>
                   {message && <p className="error-text">{message}</p>}
                   <div className="identity-action">
@@ -598,8 +600,8 @@ export default function App() {
                       KATEGORI {String(step + 1).padStart(2, "0")}
                     </div>
                     <h3>{currentCategory.name}</h3>
-                    <p>
-                      Pilih satu rekan yang paling sesuai dengan kategori ini.
+                    <p className="category-description">
+                      {CATEGORY_DESCRIPTIONS[Number(currentCategory.sort_order)] || "Pilih satu rekan yang paling sesuai dengan kategori ini."}
                     </p>
                     <div className="candidate-grid">
                       {people.map((p, i) => (
@@ -703,13 +705,14 @@ export default function App() {
           <section className="vote-panel">
             <div className="eyebrow red">LANGKAH TERAKHIR</div>
             <h2>Periksa pilihanmu</h2>
-            <p>Pastikan semua pilihan sudah benar sebelum dikirim. {isRoyVoter ? "Kamu mengisi 7 kategori termasuk Best Employee." : "Kamu mengisi 6 kategori; Best Employee khusus untuk Roy M. Siagian."}</p>
+            <p>Pastikan semua pilihan sudah benar sebelum dikirim. Kamu mengisi enam kategori.</p>
             <div className="review-list">
               {voterCategories.map((c, i) => (
                 <div className="review-row" key={c.id}>
                   <span>{String(i + 1).padStart(2, "0")}</span>
                   <div>
                     <b>{c.name}</b>
+                    <small className="review-description">{CATEGORY_DESCRIPTIONS[Number(c.sort_order)]}</small>
                     <small>
                       {people.find((p) => p.id === choices[c.id])?.full_name ||
                         "Belum dipilih"}
@@ -732,7 +735,7 @@ export default function App() {
                 busy ||
                 !configured ||
                 !selectedPerson ||
-                categories.length !== 7 ||
+                categories.length !== 6 ||
                 voterCategories.some((c) => !choices[c.id])
               }
               onClick={submitBallot}
@@ -850,6 +853,7 @@ export default function App() {
                       <b>{s.total} suara</b>
                     </div>
                     <h3>{s.name}</h3>
+                    <p className="category-description">{CATEGORY_DESCRIPTIONS[Number(s.sort_order)]}</p>
                     {s.rank.slice(0, 5).map(([id, count]) => (
                       <div className="bar-row" key={id}>
                         <div className="bar-label">
